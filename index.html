@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Website Source Code Viewer</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Prism.js for syntax highlighting -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box;font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif}
+    body{background:linear-gradient(135deg,#6a11cb 0%,#2575fc 100%);color:#333;min-height:100vh;padding:20px;display:flex;flex-direction:column;align-items:center}
+    .container{width:100%;max-width:900px;background:#fff;border-radius:15px;box-shadow:0 10px 30px rgba(0,0,0,.2);overflow:hidden;margin-top:20px}
+    header{background:#4e54c8;color:#fff;padding:25px;text-align:center}
+    h1{font-size:2.2rem;margin-bottom:10px}
+    .description{font-size:1.1rem;opacity:.9;max-width:600px;margin:0 auto}
+    .input-section{padding:25px;background:#f5f7ff;display:flex;flex-direction:column;align-items:center}
+    .url-input{width:100%;max-width:600px;display:flex;flex-direction:column;gap:15px}
+    input{padding:15px;border:2px solid #ddd;border-radius:8px;font-size:1rem;width:100%;transition:border-color .3s}
+    input:focus{border-color:#4e54c8;outline:none}
+    button{background:#4e54c8;color:#fff;border:none;padding:12px 20px;border-radius:8px;cursor:pointer;font-size:1rem;font-weight:600;transition:background .3s;display:inline-flex;align-items:center;gap:8px}
+    button:hover{background:#3a3eb3}
+    .result-section{padding:25px}
+    .code-container{background:#2d2d2d;border-radius:8px;overflow:hidden;margin-top:20px;max-height:500px;overflow-y:auto}
+    .code-header{background:#1e1e1e;padding:12px 20px;display:flex;justify-content:space-between;align-items:center}
+    .code-header h3{color:#fff;font-size:1.1rem}
+    .copy-btn{background:#4e54c8;padding:8px 15px;font-size:.9rem}
+    pre{margin:0 !important;padding:20px !important;max-width:100%;overflow-x:auto}
+    code{font-family:'Fira Code',monospace;font-size:.95rem}
+    .copy-bottom{margin:10px 0;text-align:right}
+    .message{color:#ccc}
+    footer{margin-top:30px;text-align:center;color:#fff;opacity:.8;padding:20px}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Website Source Code Viewer</h1>
+    <p class="description">Enter any website URL to view its HTML source code instantly. A useful tool for developers and learners.</p>
+  </header>
+
+  <div class="container">
+    <div class="input-section">
+      <div class="url-input">
+        <input type="url" id="url-input" placeholder="Enter website URL (e.g., https://example.com)" value="https://">
+        <button id="fetch-btn"><i class="fas fa-code"></i> View Source Code</button>
+      </div>
+    </div>
+
+    <div class="result-section">
+      <div class="code-container">
+        <div class="code-header">
+          <h3 id="status-label">Source Code</h3>
+          <button class="copy-btn" id="copy-btn" disabled><i class="fas fa-copy"></i> Copy</button>
+        </div>
+        <pre><code id="code-output" class="language-markup message">The source code will appear here after you enter a URL and click "View Source Code"</code></pre>
+      </div>
+      <!-- NEW copy code button -->
+      <div class="copy-bottom">
+        <button id="copy-code-btn" disabled><i class="fas fa-copy"></i> Copy Code</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <p>Website Source Code Viewer &copy; 2025 | Created for educational purposes</p>
+  </footer>
+
+  <!-- Prism.js -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup.min.js"></script>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlInput = document.getElementById('url-input');
+      const fetchBtn = document.getElementById('fetch-btn');
+      const codeOutput = document.getElementById('code-output');
+      const copyBtn = document.getElementById('copy-btn');
+      const copyCodeBtn = document.getElementById('copy-code-btn');
+      const statusLabel = document.getElementById('status-label');
+
+      const setMessage = (msg) => {
+        codeOutput.classList.add('message');
+        codeOutput.textContent = msg;
+        copyBtn.disabled = true;
+        copyCodeBtn.disabled = true;
+      };
+
+      const setCode = (code) => {
+        codeOutput.classList.remove('message');
+        codeOutput.textContent = code;
+        statusLabel.textContent = 'Source Code';
+        copyBtn.disabled = false;
+        copyCodeBtn.disabled = false;
+        Prism.highlightElement(codeOutput); // ✅ highlight
+      };
+
+      async function fetchHtml(url) {
+        const proxy = 'https://api.allorigins.win/raw?url=';
+        const res = await fetch(proxy + encodeURIComponent(url));
+        if (!res.ok) throw new Error('Fetch failed');
+        return await res.text();
+      }
+
+      fetchBtn.addEventListener('click', async () => {
+        const url = urlInput.value.trim();
+        if (!url || url === 'https://') {
+          alert('Please enter a valid URL');
+          return;
+        }
+        setMessage('Fetching source code...');
+        fetchBtn.disabled = true;
+
+        try {
+          const text = await fetchHtml(url);
+          setCode(text);
+        } catch (e) {
+          console.error(e);
+          setMessage('Error fetching source code. Some sites may block requests.');
+        } finally {
+          fetchBtn.disabled = false;
+        }
+      });
+
+      function copyContent() {
+        const text = codeOutput.textContent;
+        if (!text.trim()) return;
+        navigator.clipboard.writeText(text).then(() => {
+          alert('Code copied to clipboard!');
+        }).catch(err => {
+          console.error(err);
+          alert('Failed to copy code.');
+        });
+      }
+
+      copyBtn.addEventListener('click', copyContent);
+      copyCodeBtn.addEventListener('click', copyContent);
+    });
+  </script>
+</body>
+</html>
